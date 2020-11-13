@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"dk/base"
+	"dk/cli"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -85,7 +86,7 @@ func main() {
 	}
 	switch cf.Mode {
 	case "client":
-	//	cli.Start(cf.Client)
+		cli.Start(cf.Client)
 	case "server":
 		if len(cf.Server.Users) == 0 {
 			fmt.Fprintln(os.Stderr, `ERROR: no user defined (server.users), use "-init" to generate`)
