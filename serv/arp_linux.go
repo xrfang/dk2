@@ -1,6 +1,5 @@
 //+build linux
-
-package cli
+package serv
 
 import (
 	"fmt"

@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"dk/base"
-	"dk/cli"
+	"dk/serv"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -52,7 +52,7 @@ func main() {
 	}
 	loadConfig(*cfg)
 	if *init {
-		if cf.Mode == "server" {
+		if cf.Mode == "gateway" {
 			nx := regexp.MustCompile(`^\w{1,32}$`)
 			r := bufio.NewReader(os.Stdin)
 			fmt.Print("username: ")
@@ -64,19 +64,19 @@ func main() {
 			}
 			gopts := totp.GenerateOpts{
 				AccountName: login,
-				Issuer:      cf.Server.OTPIssuer,
+				Issuer:      cf.Gateway.OTPIssuer,
 			}
 			key, err := totp.Generate(gopts)
 			assert(err)
 			qrterminal.Generate(key.String(), qrterminal.L, os.Stdout)
-			cf.Server.Users[login] = key.Secret()
+			cf.Gateway.Users[login] = key.Secret()
 			f, err := os.Create(*cfg)
 			assert(err)
 			defer f.Close()
 			ye := yaml.NewEncoder(f)
 			assert(ye.Encode(&cf))
 		} else {
-			fmt.Println("OTP key initialization is for DK server only (given client config)")
+			fmt.Println("OTP key initialization is for DK gateway only (given backend config)")
 		}
 		return
 	}
@@ -85,18 +85,18 @@ func main() {
 		base.Log("ulimit(): %v", err)
 	}
 	switch cf.Mode {
-	case "client":
-		cli.Start(cf.Client)
-	case "server":
-		if len(cf.Server.Users) == 0 {
-			fmt.Fprintln(os.Stderr, `ERROR: no user defined (server.users), use "-init" to generate`)
+	case "backend":
+		serv.Start(cf.Backend)
+	case "gateway":
+		if len(cf.Gateway.Users) == 0 {
+			fmt.Fprintln(os.Stderr, `ERROR: no user defined (gateway.users), use "-init" to generate`)
 			return
 		}
-		if len(cf.Server.Auths) == 0 {
-			fmt.Fprintln(os.Stderr, `ERROR: no client-auth defined (server.auths)`)
+		if len(cf.Gateway.Auths) == 0 {
+			fmt.Fprintln(os.Stderr, `ERROR: no auth defined (gateway.auths)`)
 			return
 		}
 		fmt.Printf("todo: start server...")
-		//	svr.Start(cf.Server)
+		//	svr.Start(cf.Gateway)
 	}
 }

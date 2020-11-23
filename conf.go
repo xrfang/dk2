@@ -1,24 +1,23 @@
 package main
 
 import (
+	"dk/ctrl"
+	"dk/serv"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"dk/cli"
-	"dk/svr"
-
 	"gopkg.in/yaml.v2"
 )
 
 type config struct {
-	Mode    string     `yaml:"mode"`
-	Debug   bool       `yaml:"debug"`
-	Server  svr.Config `yaml:"server"`
-	Client  cli.Config `yaml:"client"`
-	ULimit  uint64     `yaml:"ulimit" json:"ulimit"`
+	Mode    string      `yaml:"mode"`
+	Debug   bool        `yaml:"debug"`
+	Gateway ctrl.Config `yaml:"server"`
+	Backend serv.Config `yaml:"client"`
+	ULimit  uint64      `yaml:"ulimit" json:"ulimit"`
 	Logging struct {
 		Path  string `yaml:"path" json:"path"`
 		Split int    `yaml:"split" json:"split"`
@@ -65,51 +64,51 @@ func loadConfig(fn string) {
 	assert(yaml.NewDecoder(f).Decode(&cf))
 	cf.Mode = strings.ToLower(cf.Mode)
 	switch cf.Mode {
-	case "client":
-		if !nr.MatchString(cf.Client.Name) {
+	case "backend":
+		if !nr.MatchString(cf.Backend.Name) {
 			panic(fmt.Errorf("loadConfig: client.name must be 1~32 chars of alphanum, . or -"))
 		}
-		cf.Client.Name = strings.ToLower(cf.Client.Name)
-		if cf.Client.SvrPort <= 0 || cf.Client.SvrPort > 65535 {
-			cf.Client.SvrPort = 35357
+		cf.Backend.Name = strings.ToLower(cf.Backend.Name)
+		if cf.Backend.SvrPort <= 0 || cf.Backend.SvrPort > 65535 {
+			cf.Backend.SvrPort = 35357
 		}
-		if cf.Client.MacScan < 100 {
-			cf.Client.MacScan = 1000
+		if cf.Backend.MacScan < 100 {
+			cf.Backend.MacScan = 1000
 		}
-		if cf.Client.MacScan > 5000 {
-			cf.Client.MacScan = 5000
+		if cf.Backend.MacScan > 5000 {
+			cf.Backend.MacScan = 5000
 		}
-	case "server":
-		if cf.Server.CtrlPort <= 0 || cf.Server.CtrlPort > 65535 {
-			cf.Server.CtrlPort = 3535
+	case "gateway":
+		if cf.Gateway.CtrlPort <= 0 || cf.Gateway.CtrlPort > 65535 {
+			cf.Gateway.CtrlPort = 3535
 		}
-		if cf.Server.ServPort <= 0 || cf.Server.ServPort > 65535 {
-			cf.Server.ServPort = 35350
+		if cf.Gateway.ServPort <= 0 || cf.Gateway.ServPort > 65535 {
+			cf.Gateway.ServPort = 35350
 		}
-		if cf.Server.Handshake <= 0 || cf.Server.Handshake > 60 {
-			cf.Server.Handshake = 10
+		if cf.Gateway.Handshake <= 0 || cf.Gateway.Handshake > 60 {
+			cf.Gateway.Handshake = 10
 		}
-		if cf.Server.IdleClose <= 0 || cf.Server.IdleClose > 3600 {
-			cf.Server.IdleClose = 600
+		if cf.Gateway.IdleClose <= 0 || cf.Gateway.IdleClose > 3600 {
+			cf.Gateway.IdleClose = 600
 		}
-		if cf.Server.AuthTime <= 0 || cf.Server.AuthTime > 86400 {
-			cf.Server.AuthTime = 3600
+		if cf.Gateway.AuthTime <= 0 || cf.Gateway.AuthTime > 86400 {
+			cf.Gateway.AuthTime = 3600
 		}
-		if cf.Server.OTPIssuer == "" {
-			cf.Server.OTPIssuer = "Door Keeper"
+		if cf.Gateway.OTPIssuer == "" {
+			cf.Gateway.OTPIssuer = "Door Keeper"
 		}
-		if cf.Server.Users == nil {
-			cf.Server.Users = make(map[string]string)
+		if cf.Gateway.Users == nil {
+			cf.Gateway.Users = make(map[string]string)
 		} else {
-			cf.Server.Users = unifyMap("server.users", cf.Server.Users)
+			cf.Gateway.Users = unifyMap("server.users", cf.Gateway.Users)
 		}
-		if cf.Server.Auths == nil {
-			cf.Server.Auths = make(map[string]string)
+		if cf.Gateway.Auths == nil {
+			cf.Gateway.Auths = make(map[string]string)
 		} else {
-			cf.Server.Auths = unifyMap("server.auths", cf.Server.Auths)
+			cf.Gateway.Auths = unifyMap("server.auths", cf.Gateway.Auths)
 		}
 	default:
-		panic(fmt.Errorf(`loadConfig: mode must be "client" or "server"`))
+		panic(fmt.Errorf(`loadConfig: mode must be "backend" or "gateway"`))
 	}
 	if cf.ULimit == 0 {
 		cf.ULimit = 1024

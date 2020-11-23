@@ -1,6 +1,5 @@
 //+build windows
-
-package cli
+package serv
 
 import (
 	"errors"
