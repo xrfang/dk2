@@ -24,7 +24,7 @@ func Start(cf Config) {
 		go func(c net.Conn) {
 			ra := c.RemoteAddr().String()
 			assert(c.SetDeadline(time.Now().Add(handshake)))
-			buf := make([]byte, 1024)
+			buf := make([]byte, 32)
 			n, err := c.Read(buf)
 			if err != nil {
 				err, ok := err.(net.Error)

@@ -15,8 +15,8 @@ import (
 type config struct {
 	Mode    string      `yaml:"mode"`
 	Debug   bool        `yaml:"debug"`
-	Gateway ctrl.Config `yaml:"server"`
-	Backend serv.Config `yaml:"client"`
+	Gateway ctrl.Config `yaml:"gateway"`
+	Backend serv.Config `yaml:"backend"`
 	ULimit  uint64      `yaml:"ulimit" json:"ulimit"`
 	Logging struct {
 		Path  string `yaml:"path" json:"path"`
