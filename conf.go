@@ -88,6 +88,9 @@ func loadConfig(fn string) {
 		if cf.Gateway.Handshake <= 0 || cf.Gateway.Handshake > 60 {
 			cf.Gateway.Handshake = 10
 		}
+		if cf.Gateway.MaxServes <= 0 || cf.Gateway.MaxServes > 99 {
+			cf.Gateway.MaxServes = 9
+		}
 		if cf.Gateway.IdleClose <= 0 || cf.Gateway.IdleClose > 3600 {
 			cf.Gateway.IdleClose = 600
 		}
