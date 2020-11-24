@@ -69,8 +69,8 @@ func loadConfig(fn string) {
 			panic(fmt.Errorf("loadConfig: client.name must be 1~32 chars of alphanum, . or -"))
 		}
 		cf.Backend.Name = strings.ToLower(cf.Backend.Name)
-		if cf.Backend.SvrPort <= 0 || cf.Backend.SvrPort > 65535 {
-			cf.Backend.SvrPort = 35357
+		if cf.Backend.CtrlPort <= 0 || cf.Backend.CtrlPort > 65535 {
+			cf.Backend.CtrlPort = 35357
 		}
 		if cf.Backend.MacScan < 100 {
 			cf.Backend.MacScan = 1000

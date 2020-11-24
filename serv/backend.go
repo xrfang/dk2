@@ -109,7 +109,7 @@ func (p *proxy) run(cf Config) {
 		}
 		p.setLive(false)
 	}()
-	addr := fmt.Sprintf("%s:%d", cf.SvrHost, cf.SvrPort)
+	addr := fmt.Sprintf("%s:%d", cf.CtrlHost, cf.CtrlPort)
 	conn, err := net.Dial("tcp", addr)
 	assert(err)
 	base.Log("connected to %s", addr)
