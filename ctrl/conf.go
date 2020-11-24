@@ -2,7 +2,7 @@ package ctrl
 
 type (
 	Config struct {
-		CtrlPort  int               `yaml:"ctrl_port"`
+		MgmtPort  int               `yaml:"mgmt_port"`
 		ServPort  int               `yaml:"serv_port"`
 		MaxServes int               `yaml:"max_serves"`
 		Handshake int               `yaml:"handshake"`

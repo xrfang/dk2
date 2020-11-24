@@ -70,7 +70,7 @@ func loadConfig(fn string) {
 		}
 		cf.Backend.Name = strings.ToLower(cf.Backend.Name)
 		if cf.Backend.CtrlPort <= 0 || cf.Backend.CtrlPort > 65535 {
-			cf.Backend.CtrlPort = 35357
+			cf.Backend.CtrlPort = 35350
 		}
 		if cf.Backend.MacScan < 100 {
 			cf.Backend.MacScan = 1000
@@ -79,8 +79,8 @@ func loadConfig(fn string) {
 			cf.Backend.MacScan = 5000
 		}
 	case "gateway":
-		if cf.Gateway.CtrlPort <= 0 || cf.Gateway.CtrlPort > 65535 {
-			cf.Gateway.CtrlPort = 3535
+		if cf.Gateway.MgmtPort <= 0 || cf.Gateway.MgmtPort > 65535 {
+			cf.Gateway.MgmtPort = 3535
 		}
 		if cf.Gateway.ServPort <= 0 || cf.Gateway.ServPort > 65535 {
 			cf.Gateway.ServPort = 35350
@@ -94,7 +94,7 @@ func loadConfig(fn string) {
 		if cf.Gateway.MaxServes <= 0 || cf.Gateway.MaxServes > 99 {
 			cf.Gateway.MaxServes = 9
 		}
-		if cf.Gateway.IdleClose <= 0 || cf.Gateway.IdleClose > 3600 {
+		if cf.Gateway.IdleClose <= 0 || cf.Gateway.IdleClose > 86400 {
 			cf.Gateway.IdleClose = 600
 		}
 		if cf.Gateway.AuthTime <= 0 || cf.Gateway.AuthTime > 86400 {
