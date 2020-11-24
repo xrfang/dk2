@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"dk/base"
+	"dk/ctrl"
 	"dk/serv"
 	"flag"
 	"fmt"
@@ -96,7 +97,6 @@ func main() {
 			fmt.Fprintln(os.Stderr, `ERROR: no auth defined (gateway.auths)`)
 			return
 		}
-		fmt.Printf("todo: start server...")
-		//	svr.Start(cf.Gateway)
+		ctrl.Start(cf.Gateway)
 	}
 }

@@ -63,9 +63,10 @@ func Start(cf Config) {
 				c.Close()
 				return
 			}
-			base.Log(`backend "%s" connected (%s)`, name, ra)
+			base.Log(`backend "%s" connected (%s)`, ra, name)
+			//TODO: ADD CONN TO REGISTRY
 			err = base.NewPinger(c, cf.KeepAlive).KeepAlive()
-			base.Log(`ping(%s@%s): %v`, name, ra, err)
+			base.Log(`ping(%s): %v`, name, err)
 		}(conn)
 	}
 }

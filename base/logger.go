@@ -123,6 +123,11 @@ func (sl *stdLogger) flush() {
 	defer sl.Unlock()
 	if len(sl.lines) > 0 {
 		sl.persist()
+		if sl.dbgMode {
+			for _, l := range sl.lines {
+				fmt.Println(l)
+			}
+		}
 		sl.lines = nil
 	}
 }

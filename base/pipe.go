@@ -2,6 +2,7 @@ package base
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"time"
 )
@@ -40,7 +41,7 @@ func NewPinger(c net.Conn, interval int) *Pinger {
 func send(conn net.Conn, buf []byte) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = trace("base.send(): %v", e)
+			err = fmt.Errorf("base.send: %v", e)
 		}
 	}()
 	assert(conn.SetWriteDeadline(time.Now().Add(time.Minute)))
@@ -58,10 +59,9 @@ func (p *Pinger) KeepAlive() (err error) {
 		return errors.New("no connection")
 	}
 	if p.Interval <= 0 {
-		return errors.New("ping deactivated")
+		return errors.New("switched off")
 	}
 	for {
-		p.Interval = time.Second //TODO：调试期间设为1秒
 		time.Sleep(p.Interval)
 		err = send(p.Inner, []byte{0xC0, 3, 0})
 		if err != nil {
