@@ -6,6 +6,7 @@ type (
 		ServPort  int               `yaml:"serv_port"`
 		MaxServes int               `yaml:"max_serves"`
 		Handshake int               `yaml:"handshake"`
+		KeepAlive int               `yaml:"keep_alive"`
 		IdleClose int               `yaml:"idle_close"`
 		AuthTime  int               `yaml:"auth_time"`
 		OTPIssuer string            `yaml:"otp_issuer"`

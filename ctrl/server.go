@@ -60,10 +60,12 @@ func Start(cf Config) {
 			if name == "" {
 				base.Dbg("validate(%s): invalid hmac [%x]", ra, buf[:n])
 				base.Log(`backend "%s" refused (handshake failed)`, ra)
-				conn.Close()
+				c.Close()
 				return
 			}
-			base.Log("backend %s connected", ra)
+			base.Log(`backend "%s" connected (%s)`, name, ra)
+			err = base.NewPinger(c, cf.KeepAlive).KeepAlive()
+			base.Log(`ping(%s@%s): %v`, name, ra, err)
 		}(conn)
 	}
 }
