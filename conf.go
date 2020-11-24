@@ -72,6 +72,9 @@ func loadConfig(fn string) {
 		if cf.Backend.CtrlPort <= 0 || cf.Backend.CtrlPort > 65535 {
 			cf.Backend.CtrlPort = 35350
 		}
+		if cf.Backend.ConnWait <= 0 || cf.Backend.ConnWait > 300 {
+			cf.Backend.ConnWait = 60
+		}
 		if cf.Backend.MacScan < 100 {
 			cf.Backend.MacScan = 1000
 		}
