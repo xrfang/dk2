@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func portScan(port int, cidrs []string, timeout int) (ips []string) {
+func portScan(port uint16, cidrs []string, timeout int) (ips []string) {
 	resc := make(chan string)
 	go func() { //收集结果
 		for {

@@ -16,3 +16,13 @@ func Close(conn net.Conn, session uint32) error {
 	buf, _ := Encode(ChunkCLS, id)
 	return Send(conn, buf)
 }
+
+func Reply(conn net.Conn, session uint32, data []byte) error {
+	id := make([]byte, 4)
+	binary.BigEndian.PutUint32(id, session)
+	buf, err := Encode(ChunkCMD, append(id, data...))
+	if err != nil {
+		return err
+	}
+	return Send(conn, buf)
+}

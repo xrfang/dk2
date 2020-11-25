@@ -1,10 +1,12 @@
 package serv
 
 import (
+	"bytes"
 	"dk/base"
 	"encoding/binary"
 	"fmt"
 	"net"
+	"sort"
 	"time"
 )
 
@@ -26,7 +28,7 @@ var (
 	ch     chan packet
 )
 
-func procPackets() {
+func procPackets(cf Config) {
 	var (
 		session uint32
 		data    []byte
@@ -110,7 +112,20 @@ func procPackets() {
 					base.Log("pong: %v", err)
 				}
 			case 1:
-				base.Log("TODO: handle port scan request")
+				port := binary.BigEndian.Uint16(data[1:])
+				hosts := portScan(port, cf.LanNets, cf.MacScan)
+				var msg bytes.Buffer
+				if len(hosts) == 0 {
+					fmt.Fprintln(&msg, "ERR")
+					fmt.Fprintf(&msg, "no host opens port %d\n", port)
+				} else {
+					sort.Strings(hosts)
+					fmt.Fprintln(&msg, "OK")
+					for _, h := range hosts {
+						fmt.Fprintln(&msg, h)
+					}
+				}
+				base.Reply(master, session, msg.Bytes())
 			}
 		case base.ChunkNUL:
 			if p.conn == nil {
@@ -138,11 +153,11 @@ func procPackets() {
 	}
 }
 
-func serve(conn net.Conn) {
+func serve(conn net.Conn, cf Config) {
 	ch = make(chan packet, queueCap)
 	peer = make(map[uint32]*base.Conn)
 	master = conn
-	go procPackets()
+	go procPackets(cf)
 	for {
 		ct, buf, err := base.Recv(master)
 		if err != nil {

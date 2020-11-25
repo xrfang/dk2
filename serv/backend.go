@@ -24,7 +24,7 @@ func Start(cf Config) {
 				base.Log("%v", err)
 				return
 			}
-			serve(conn)
+			serve(conn, cf)
 		}()
 		time.Sleep(time.Second)
 	}
