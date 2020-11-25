@@ -44,7 +44,7 @@ func dispatch(session uint32, data []byte) {
 		base.Dbg("dispatch[%x]: session not found, dropped %d bytes", session, len(data))
 		return
 	}
-	if err := c.Send(0, base.ChunkDAT, data); err != nil {
+	if err := c.Send(base.ChunkDAT, data); err != nil {
 		base.Log("dispatch[%x]: %v", session, err)
 	}
 }
@@ -68,7 +68,7 @@ func RegisterBackend(name string, conn net.Conn, cf Config) {
 	dc := base.NewConn(conn)
 	sr.pool[name] = dc
 	//定时PING后端，保持连接不被NAT防火墙关闭
-	go func() {
+	go func(c net.Conn) {
 		if cf.KeepAlive <= 0 {
 			return
 		}
@@ -81,9 +81,11 @@ func RegisterBackend(name string, conn net.Conn, cf Config) {
 		}()
 		for {
 			time.Sleep(ping)
-			assert(dc.Send(0, base.ChunkCMD, []byte{0}))
+			if err := base.Ping(c); err != nil {
+				//TODO: 该后端出问题了，应当断开连接
+			}
 		}
-	}()
+	}(conn)
 	//定时清理不活跃的前端连接，释放系统资源
 	go func() {
 		interval := cf.IdleClose / 2
