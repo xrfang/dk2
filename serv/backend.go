@@ -8,6 +8,7 @@ import (
 )
 
 func Start(cf Config) {
+	go procPackets(cf)
 	addr := fmt.Sprintf("%s:%d", cf.CtrlHost, cf.CtrlPort)
 	for {
 		func() {

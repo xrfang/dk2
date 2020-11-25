@@ -29,13 +29,10 @@ var (
 )
 
 func procPackets(cf Config) {
-	var (
-		session uint32
-		data    []byte
-	)
+	ch = make(chan packet, queueCap)
 	for {
-		session = 0
-		data = nil
+		var session uint32
+		var data []byte
 		p := <-ch
 		if len(p.buf) >= 4 {
 			session = binary.BigEndian.Uint32(p.buf[:4])
@@ -125,7 +122,9 @@ func procPackets(cf Config) {
 						fmt.Fprintln(&msg, h)
 					}
 				}
-				base.Reply(master, session, msg.Bytes())
+				if err := base.Reply(master, session, msg.Bytes()); err != nil {
+					base.Log("reply(scan#%d): %v", port, err)
+				}
 			}
 		case base.ChunkNUL:
 			if p.conn == nil {
@@ -135,13 +134,13 @@ func procPackets(cf Config) {
 					bad.Close()
 				}
 				delete(peer, session)
-				return
+				break
 			}
 			s := peer[session]
 			if s == nil {
 				base.Log("unregistered session %x abandoned", session)
 				p.conn.Close()
-				return
+				break
 			}
 			s.Connect(p.conn)
 			if err := s.Send(base.ChunkNUL, nil); err != nil {
@@ -154,10 +153,8 @@ func procPackets(cf Config) {
 }
 
 func serve(conn net.Conn, cf Config) {
-	ch = make(chan packet, queueCap)
 	peer = make(map[uint32]*base.Conn)
 	master = conn
-	go procPackets(cf)
 	for {
 		ct, buf, err := base.Recv(master)
 		if err != nil {
