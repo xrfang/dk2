@@ -59,6 +59,10 @@ func procPackets(cf Config) {
 			}
 			peer[session] = base.NewConn(nil)
 			go func(session uint32, dest []byte) {
+				if len(dest) != 2+net.IPv4len && len(dest) != 2+net.IPv6len {
+					base.Log("ChunkOPN: invalid destination")
+					return
+				}
 				port := binary.BigEndian.Uint16(dest[:2])
 				ip := net.IP(dest[2:])
 				addr := fmt.Sprintf("%s:%d", ip.String(), port)
@@ -73,18 +77,19 @@ func procPackets(cf Config) {
 				} else {
 					p = packet{ct: base.ChunkNUL, buf: data, conn: conn}
 					go func(s uint32, c net.Conn) {
+						defer func() {
+							if e := recover(); e != nil {
+								msg := make([]byte, 4)
+								binary.BigEndian.PutUint32(msg, s)
+								msg = append(msg, []byte(e.(error).Error())...)
+								ch <- packet{ct: base.ChunkNUL, buf: msg}
+							}
+						}()
 						data := make([]byte, base.MTU-2)
 						for {
 							n, err := c.Read(data)
-							if err != nil {
-								msg := make([]byte, 4)
-								binary.BigEndian.PutUint32(msg, s)
-								ch <- packet{ct: base.ChunkNUL, buf: append(msg, []byte(err.Error())...)}
-								return
-							}
 							assert(err)
-							buf, _ := base.Encode(base.ChunkDAT, data[:n])
-							base.Send(master, buf)
+							assert(base.Send(master, data[:n]))
 						}
 					}(session, conn)
 				}

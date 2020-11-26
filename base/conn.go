@@ -42,7 +42,7 @@ func Encode(ct ChunkType, data []byte) ([]byte, error) {
 	return buf[:clen], nil
 }
 
-func Send(conn net.Conn, buf []byte) (err error) {
+func send(conn net.Conn, buf []byte) (err error) {
 	deadline := time.Now().Add(time.Duration(TIMEOUT) * time.Second)
 	if err = conn.SetWriteDeadline(deadline); err == nil {
 		_, err = conn.Write(buf)
@@ -85,7 +85,7 @@ func (c *Conn) Send(ct ChunkType, data []byte) (err error) {
 		return nil
 	}
 	for _, buf := range c.data {
-		if err = Send(c.conn, buf); err != nil {
+		if err = send(c.conn, buf); err != nil {
 			return
 		}
 	}
@@ -98,11 +98,10 @@ func (c *Conn) Send(ct ChunkType, data []byte) (err error) {
 
 func (c *Conn) Close() error {
 	c.data = nil
-	var err error
 	if c.conn != nil {
-		err = c.conn.Close()
+		return c.conn.Close()
 	}
-	return err
+	return nil
 }
 
 func (c *Conn) Connect(conn net.Conn) {

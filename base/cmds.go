@@ -7,14 +7,14 @@ import (
 
 func Ping(conn net.Conn) error {
 	buf, _ := Encode(ChunkCMD, []byte{0, 0, 0, 0, 0})
-	return Send(conn, buf)
+	return send(conn, buf)
 }
 
 func Close(conn net.Conn, session uint32) error {
 	id := make([]byte, 4)
 	binary.BigEndian.PutUint32(id, session)
 	buf, _ := Encode(ChunkCLS, id)
-	return Send(conn, buf)
+	return send(conn, buf)
 }
 
 func Reply(conn net.Conn, session uint32, data []byte) error {
@@ -24,5 +24,21 @@ func Reply(conn net.Conn, session uint32, data []byte) error {
 	if err != nil {
 		return err
 	}
-	return Send(conn, buf)
+	return send(conn, buf)
+}
+
+func Open(conn net.Conn, session uint32, dest []byte) error {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, session)
+	buf = append(buf, dest...)
+	buf, _ = Encode(ChunkOPN, buf)
+	return send(conn, buf)
+}
+
+func Send(conn net.Conn, data []byte) error {
+	buf, err := Encode(ChunkDAT, data)
+	if err != nil {
+		return err
+	}
+	return send(conn, buf)
 }

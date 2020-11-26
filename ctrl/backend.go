@@ -15,6 +15,7 @@ type (
 	chunk struct {
 		cls base.ChunkType
 		buf []byte
+		arg interface{}
 	}
 	backend struct {
 		serv net.Conn
@@ -26,12 +27,18 @@ type (
 		name string
 		conn net.Conn
 	}
+	reqConn struct {
+		session uint32
+		backend string
+		host    net.IP
+		port    uint16
+		conn    net.Conn
+	}
 )
 
 func (b *backend) Remove(session uint32) {
 	s := b.clis[session]
 	if s == nil {
-		base.Dbg("session %x not found, cannot remove")
 		return
 	}
 	s.Close()
@@ -96,12 +103,40 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 					base.Dbg("received pong from backend")
 				}
 			case base.ChunkNUL:
-				for s, c := range b.clis {
-					if c.Idle(cf.IdleClose) {
-						c.Close()
-						delete(b.clis, s)
+				if session == 0 { //清理空闲连接
+					base.Dbg("[%s] cleaning %d remote sessions", name, len(b.clis))
+					for s, c := range b.clis {
+						if c.Idle(cf.IdleClose) {
+							base.Dbg("[%s] closing idle session %x", name, s)
+							c.Close()
+							delete(b.clis, s)
+						}
 					}
+					break
 				}
+				//创建新连接
+				conn, ok := c.arg.(net.Conn)
+				if !ok {
+					base.Log("[%s] invalid arg type: %T", name, c.arg)
+					break
+				}
+				b.Remove(session)
+				b.clis[session] = base.NewConn(conn)
+				base.Open(b.serv, session, data)
+				go func(c net.Conn) {
+					defer func() {
+						if e := recover(); e != nil {
+							base.Dbg("[%s] session %x: %v", name, session, e)
+							base.Close(b.serv, session)
+						}
+					}()
+					data := make([]byte, base.MTU-2)
+					for {
+						n, err := c.Read(data)
+						assert(err)
+						assert(base.Send(b.serv, data[:n]))
+					}
+				}(conn)
 			}
 		}
 	}()
@@ -114,7 +149,7 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 				ch <- reqServ{name, nil}
 				return
 			}
-			b.comm <- chunk{ct, buf}
+			b.comm <- chunk{ct, buf, nil}
 		}
 	}()
 	go func() { //定时清理不活跃的前端连接，释放系统资源
@@ -127,7 +162,7 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 		}
 		for {
 			time.Sleep(time.Duration(interval) * time.Second)
-			b.comm <- chunk{base.ChunkNUL, nil} //buf为nil表示清理空闲连接，目前只有这一个用途
+			b.comm <- chunk{base.ChunkNUL, nil, nil}
 		}
 	}()
 	return b
@@ -159,6 +194,9 @@ func startBackendRegistrar(cf Config) {
 				if req.conn != nil { //conn非空，表示注册新后端
 					bs[req.name] = NewBackend(req.name, req.conn, cf)
 				}
+			case reqConn:
+				//req := cmd.(reqConn)
+
 			}
 		}
 	}()
