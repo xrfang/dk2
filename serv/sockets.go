@@ -28,8 +28,11 @@ var (
 	ch     chan packet
 )
 
-func procPackets(cf Config) {
+func init() {
 	ch = make(chan packet, queueCap)
+}
+
+func procPackets(cf Config) {
 	for {
 		var session uint32
 		var data []byte

@@ -11,6 +11,7 @@ func Start(cf Config) {
 	// sm.Init(cf)
 	// ra.Init(cf)
 	// startAdminIntf(cf)
+	startBackendRegistrar(cf)
 	handshake := time.Duration(cf.Handshake) * time.Second
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", cf.ServPort))
 	assert(err)
@@ -64,7 +65,7 @@ func Start(cf Config) {
 				return
 			}
 			base.Log(`backend "%s" connected (%s)`, ra, name)
-			RegisterBackend(name, c, cf)
+			NewBackend(name, c, cf)
 		}(conn)
 	}
 }
