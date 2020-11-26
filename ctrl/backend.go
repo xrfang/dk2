@@ -61,7 +61,6 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 				time.Sleep(ping)
 				if err := base.Ping(conn); err != nil {
 					base.Log("ping(%s): %v", name, err)
-					ch <- reqServ{name: name} //该后端出问题了，通知清理
 					return
 				}
 			}
@@ -139,9 +138,12 @@ var (
 	bs backends
 )
 
-func startBackendRegistrar(cf Config) {
+func init() {
 	bs = make(backends)
 	ch = make(chan interface{}, 64)
+}
+
+func startBackendRegistrar(cf Config) {
 	go func() {
 		for {
 			cmd := <-ch

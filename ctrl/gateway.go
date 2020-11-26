@@ -65,7 +65,7 @@ func Start(cf Config) {
 				return
 			}
 			base.Log(`backend "%s" connected (%s)`, ra, name)
-			NewBackend(name, c, cf)
+			ch <- reqServ{name, c}
 		}(conn)
 	}
 }
