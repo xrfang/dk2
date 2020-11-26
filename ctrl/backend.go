@@ -30,8 +30,7 @@ type (
 	reqConn struct {
 		session uint32
 		backend string
-		host    net.IP
-		port    uint16
+		dest    []byte //格式：大端序uint16端口号+net.IP格式的目标IP
 		conn    net.Conn
 	}
 )
@@ -195,8 +194,15 @@ func startBackendRegistrar(cf Config) {
 					bs[req.name] = NewBackend(req.name, req.conn, cf)
 				}
 			case reqConn:
-				//req := cmd.(reqConn)
-
+				req := cmd.(reqConn)
+				b := bs[req.backend]
+				if b == nil {
+					req.conn.Close()
+					break
+				}
+				buf := make([]byte, 4)
+				binary.BigEndian.PutUint32(buf, req.session)
+				b.comm <- chunk{base.ChunkNUL, buf, req.conn}
 			}
 		}
 	}()
