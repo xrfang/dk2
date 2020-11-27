@@ -75,11 +75,11 @@ func loadConfig(fn string) {
 		if cf.Backend.ConnWait <= 0 || cf.Backend.ConnWait > 300 {
 			cf.Backend.ConnWait = 60
 		}
-		if cf.Backend.MacScan < 100 {
-			cf.Backend.MacScan = 1000
+		if cf.Backend.ScanTTL < 100 {
+			cf.Backend.ScanTTL = 1000
 		}
-		if cf.Backend.MacScan > 5000 {
-			cf.Backend.MacScan = 5000
+		if cf.Backend.ScanTTL > 5000 {
+			cf.Backend.ScanTTL = 5000
 		}
 	case "gateway":
 		if cf.Gateway.MgmtPort <= 0 || cf.Gateway.MgmtPort > 65535 {

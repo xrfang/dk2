@@ -119,7 +119,7 @@ func procPackets(cf Config) {
 				}
 			case 1:
 				port := binary.BigEndian.Uint16(data[1:])
-				hosts := portScan(port, cf.LanNets, cf.MacScan)
+				hosts := portScan(port, cf.LanNets, cf.ScanTTL)
 				var msg bytes.Buffer
 				msg.WriteByte(1)
 				je := json.NewEncoder(&msg)

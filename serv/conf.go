@@ -7,5 +7,5 @@ type Config struct {
 	CtrlPort int      `yaml:"ctrl_port"`
 	Auth     string   `yaml:"auth"`
 	LanNets  []string `yaml:"lan_nets"`
-	MacScan  int      `yaml:"mac_scan"`
+	ScanTTL  int      `yaml:"scan_ttl"`
 }

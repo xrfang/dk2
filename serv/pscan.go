@@ -18,10 +18,7 @@ func portScan(port uint16, cidrs []string, timeout int) (ips []string) {
 			ips = append(ips, ip)
 		}
 	}()
-	const (
-		THREADS = 256 //并发线程数
-		TIMEOUT = 500 * time.Millisecond
-	)
+	const THREADS = 256 //并发线程数
 	task := make(chan string, THREADS)
 	var wg sync.WaitGroup
 	tts := time.Duration(timeout) * time.Millisecond
@@ -35,10 +32,9 @@ func portScan(port uint16, cidrs []string, timeout int) (ips []string) {
 					break
 				}
 				target := fmt.Sprintf("%s:%d", ip, port)
-				conn, err := net.DialTimeout("tcp", target, TIMEOUT)
+				conn, err := net.DialTimeout("tcp", target, tts)
 				if err == nil {
 					conn.Close()
-					ip += getOUI(ip, tts)
 					resc <- ip
 				}
 			}
