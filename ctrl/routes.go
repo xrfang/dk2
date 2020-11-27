@@ -3,6 +3,7 @@ package ctrl
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 func setupRoutes() {
@@ -12,5 +13,12 @@ func setupRoutes() {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "TODO...")
+	switch {
+	case r.URL.Path == "/":
+		fmt.Fprintln(w, "TODO: show admin web page")
+	case strings.HasPrefix(r.URL.Path, "/dk/"):
+		http.Error(w, "Not Found", http.StatusNotFound)
+	default:
+		fmt.Fprintln(w, "TODO: load resource "+r.URL.Path)
+	}
 }
