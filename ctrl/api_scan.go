@@ -1,6 +1,7 @@
 package ctrl
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,12 +11,18 @@ import (
 func apiScan(w http.ResponseWriter, r *http.Request) {
 	p := strings.SplitN(r.URL.Path[9:], "/", 2)
 	if len(p) != 2 {
-		http.Error(w, "Not Found", http.StatusNotFound)
+		jsonReply(w, map[string]interface{}{
+			"stat": false,
+			"mesg": "name/port expected",
+		})
 		return
 	}
 	port, _ := strconv.Atoi(p[1])
 	if port <= 0 || port > 65535 {
-		http.Error(w, "Not Found", http.StatusNotFound)
+		jsonReply(w, map[string]interface{}{
+			"stat": false,
+			"mesg": fmt.Sprintf("invalid port '%s', 1~65535 expected", p[1]),
+		})
 		return
 	}
 	ch := make(chan interface{})
@@ -24,6 +31,9 @@ func apiScan(w http.ResponseWriter, r *http.Request) {
 	case rep := <-ch:
 		jsonReply(w, rep)
 	case <-time.After(chanLife):
-		http.Error(w, "Timeout", http.StatusGatewayTimeout)
+		jsonReply(w, map[string]interface{}{
+			"stat": false,
+			"mesg": "no reply",
+		})
 	}
 }

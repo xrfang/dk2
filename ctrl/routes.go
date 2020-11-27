@@ -6,10 +6,17 @@ import (
 	"strings"
 )
 
+func notFound(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, "Not Found", http.StatusNotFound)
+}
+
 func setupRoutes() {
 	http.HandleFunc("/", home)
 	http.HandleFunc("/dk/site", apiSite)
+	http.HandleFunc("/dk/port", notFound)
 	http.HandleFunc("/dk/port/", apiScan)
+	http.HandleFunc("/dk/conn", notFound)
+	http.HandleFunc("/dk/conn/", apiConn)
 }
 
 func home(w http.ResponseWriter, r *http.Request) {

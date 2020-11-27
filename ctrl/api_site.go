@@ -12,6 +12,9 @@ func apiSite(w http.ResponseWriter, r *http.Request) {
 	case rep := <-ch:
 		jsonReply(w, rep)
 	case <-time.After(chanLife):
-		http.Error(w, "Timeout", http.StatusGatewayTimeout)
+		jsonReply(w, map[string]interface{}{
+			"stat": false,
+			"mesg": "no reply",
+		})
 	}
 }
