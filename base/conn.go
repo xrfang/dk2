@@ -54,24 +54,24 @@ func send(conn net.Conn, buf []byte) (err error) {
 	return err
 }
 
-func Recv(conn net.Conn, timeout bool) (ct ChunkType, data []byte, err error) {
-	deadline := time.Time{}
-	if timeout {
-		deadline = time.Now().Add(time.Duration(TIMEOUT) * time.Second)
-	}
-	if err = conn.SetReadDeadline(deadline); err != nil {
-		return
-	}
+func Recv(conn net.Conn) (ct ChunkType, data []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = e.(error)
+		}
+	}()
+	assert(conn.SetReadDeadline(time.Time{}))
 	buf := make([]byte, MTU)
-	if _, err = io.ReadFull(conn, buf[:2]); err != nil {
-		return
-	}
+	_, err = io.ReadFull(conn, buf[:2])
+	assert(err)
+	deadline := time.Now().Add(time.Duration(TIMEOUT) * time.Second)
+	assert(conn.SetReadDeadline(deadline))
 	ct = ChunkType((buf[0] & 0xC0) >> 6)             //目前bit-5未用，所以右移6位
 	clen := int(buf[0]&0x1F)*0x100 + int(buf[1]) - 2 //byte-0的低5位（大端序），减去2字节包头
-	if _, err = io.ReadFull(conn, buf[:clen]); err == nil {
-		data = buf[:clen]
-		err = conn.SetReadDeadline(time.Time{})
-	}
+	_, err = io.ReadFull(conn, buf[:clen])
+	assert(err)
+	data = buf[:clen]
+	assert(conn.SetReadDeadline(time.Time{}))
 	return
 }
 

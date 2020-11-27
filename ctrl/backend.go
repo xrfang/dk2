@@ -159,7 +159,7 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 	}()
 	go func() { //从后端接收数据，分发给客户端
 		for {
-			ct, buf, err := base.Recv(conn, false)
+			ct, buf, err := base.Recv(conn)
 			if err != nil {
 				base.Log("recv: %v", err)
 				base.Dbg(`unregister backend "%s"`, name)

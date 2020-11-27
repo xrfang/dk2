@@ -169,7 +169,7 @@ func serve(conn net.Conn, cf Config) {
 	peer = make(map[uint32]*base.Conn)
 	master = conn
 	for {
-		ct, buf, err := base.Recv(master, false)
+		ct, buf, err := base.Recv(master)
 		if err != nil {
 			base.Log("recv: %v", err)
 			return
