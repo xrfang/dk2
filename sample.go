@@ -8,6 +8,7 @@ gateway:            # 控制端配置
   mgmt_port: 3535   # 管理端口（HTTP API）
   serv_port: 35350  # 服务端口（从该端口开始自动分配，第一个用于后端接入，
                     # 后续为用户端接入）
+  web_root: webroot # 管理界面相关资源目录
   max_serves: 9     # 最大接入端数量（最大不得超过99）
   handshake: 10     # 握手时间窗口（秒，最大不得超过60）
   keep_alive: 60    # 保活心跳（秒，设为负值则不发送PING包）

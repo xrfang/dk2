@@ -3,6 +3,8 @@ package ctrl
 import (
 	"dk/base"
 	"encoding/binary"
+	"encoding/json"
+	"fmt"
 	"net"
 	"time"
 )
@@ -23,15 +25,27 @@ type (
 		clis map[uint32]*base.Conn
 	}
 	backends map[string]*backend
-	reqServ  struct {
+	reqServ  struct { //后端注册
 		name string
 		conn net.Conn
 	}
-	reqConn struct {
+	reqConn struct { //前端连接
 		session uint32
 		backend string
 		dest    []byte //格式：大端序uint16端口号+net.IP格式的目标IP
 		conn    net.Conn
+	}
+	reqList struct { //列出所有后端
+		rep chan interface{}
+	}
+	reqScan struct { //扫描后端开放某端口的主机
+		name string
+		port uint16
+		rep  chan interface{}
+	}
+	repScan struct { //端口扫描的回复
+		sid uint32
+		msg map[string]interface{}
 	}
 )
 
@@ -100,8 +114,12 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 				switch data[0] {
 				case 0:
 					base.Dbg("received pong from backend")
+				case 1:
+					var rep map[string]interface{}
+					json.Unmarshal(data[1:], &rep)
+					br <- repScan{session, rep}
 				}
-			case base.ChunkNUL:
+			case base.ChunkCON:
 				if session == 0 { //清理空闲连接
 					base.Dbg("[%s] cleaning %d remote sessions", name, len(b.clis))
 					for s, c := range b.clis {
@@ -141,11 +159,11 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 	}()
 	go func() { //从后端接收数据，分发给客户端
 		for {
-			ct, buf, err := base.Recv(conn)
+			ct, buf, err := base.Recv(conn, false)
 			if err != nil {
 				base.Log("recv: %v", err)
 				base.Dbg(`unregister backend "%s"`, name)
-				ch <- reqServ{name, nil}
+				br <- reqServ{name, nil}
 				return
 			}
 			b.comm <- chunk{ct, buf, nil}
@@ -161,26 +179,26 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 		}
 		for {
 			time.Sleep(time.Duration(interval) * time.Second)
-			b.comm <- chunk{base.ChunkNUL, nil, nil}
+			b.comm <- chunk{base.ChunkCON, nil, nil}
 		}
 	}()
 	return b
 }
 
 var (
-	ch chan interface{}
+	br chan interface{}
 	bs backends
 )
 
 func init() {
 	bs = make(backends)
-	ch = make(chan interface{}, 64)
+	br = make(chan interface{}, 64)
 }
 
 func startBackendRegistrar(cf Config) {
 	go func() {
 		for {
-			cmd := <-ch
+			cmd := <-br
 			switch cmd.(type) {
 			case reqServ:
 				req := cmd.(reqServ)
@@ -202,7 +220,41 @@ func startBackendRegistrar(cf Config) {
 				}
 				buf := make([]byte, 4)
 				binary.BigEndian.PutUint32(buf, req.session)
-				b.comm <- chunk{base.ChunkNUL, buf, req.conn}
+				b.comm <- chunk{base.ChunkCON, buf, req.conn}
+			case reqList:
+				req := cmd.(reqList)
+				list := []map[string]interface{}{}
+				for n, b := range bs {
+					list = append(list, map[string]interface{}{
+						"name": n,
+						"conn": len(b.clis),
+					})
+				}
+				req.rep <- map[string]interface{}{
+					"stat": true,
+					"data": list,
+				}
+			case reqScan:
+				req := cmd.(reqScan)
+				b := bs[req.name]
+				if b == nil {
+					req.rep <- map[string]interface{}{
+						"stat": false,
+						"mesg": fmt.Sprintf("backend '%s' not found", req.name),
+					}
+					break
+				}
+				buf := make([]byte, 3)
+				buf[0] = 1
+				binary.BigEndian.PutUint16(buf[1:], req.port)
+				cid := setChan(req.rep)
+				base.Reply(b.serv, cid, buf)
+			case repScan:
+				rep := cmd.(repScan)
+				ch := getChan(rep.sid)
+				if ch != nil {
+					ch <- rep.msg
+				}
 			}
 		}
 	}()

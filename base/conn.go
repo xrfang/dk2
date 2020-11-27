@@ -8,7 +8,7 @@ import (
 )
 
 type (
-	ChunkType byte
+	ChunkType int8
 	Conn      struct {
 		conn net.Conn
 		used time.Time
@@ -17,11 +17,12 @@ type (
 )
 
 const (
+	ChunkNIL ChunkType = -1   //无意义
 	ChunkCLS ChunkType = 0    //关闭连接
 	ChunkOPN ChunkType = 1    //建立连接
 	ChunkDAT ChunkType = 2    //数据传输
 	ChunkCMD ChunkType = 3    //系统命令
-	ChunkNUL ChunkType = 0xFF //保留内部使用
+	ChunkCON ChunkType = 4    //连接建立或清除（内部使用）
 	MTU                = 8192 //包头表示长度用了13bit（含2字节的包头）
 	TIMEOUT            = 60   //目前都使用默认值60秒
 	backlog            = 1024 //最多缓存的包数，超过这个数字会丢包
@@ -34,7 +35,7 @@ func Encode(ct ChunkType, data []byte) ([]byte, error) {
 	if clen > MTU {
 		return nil, ErrInvalidChunk
 	}
-	buf := make([]byte, MTU)
+	buf := make([]byte, 2)
 	buf[0] = byte(clen / 0x100)
 	buf[1] = byte(clen % 0x100)
 	buf[0] = (buf[0] & 0x1F) | (byte(ct) << 6) //目前bit-5未用，所以左移6位
@@ -53,8 +54,11 @@ func send(conn net.Conn, buf []byte) (err error) {
 	return err
 }
 
-func Recv(conn net.Conn) (ct ChunkType, data []byte, err error) {
-	deadline := time.Now().Add(time.Duration(TIMEOUT) * time.Second)
+func Recv(conn net.Conn, timeout bool) (ct ChunkType, data []byte, err error) {
+	deadline := time.Time{}
+	if timeout {
+		deadline = time.Now().Add(time.Duration(TIMEOUT) * time.Second)
+	}
 	if err = conn.SetReadDeadline(deadline); err != nil {
 		return
 	}

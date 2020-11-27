@@ -116,6 +116,11 @@ func loadConfig(fn string) {
 		} else {
 			cf.Gateway.Auths = unifyMap("server.auths", cf.Gateway.Auths)
 		}
+		if cf.Gateway.WebRoot == "" {
+			cf.Gateway.WebRoot = "webroot"
+		}
+		cf.Gateway.WebRoot = cf.absPath(cf.Gateway.WebRoot)
+		cf.Gateway.Version = verinfo()
 	default:
 		panic(fmt.Errorf(`loadConfig: mode must be "backend" or "gateway"`))
 	}

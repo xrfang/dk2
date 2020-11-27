@@ -10,7 +10,9 @@ type (
 		IdleClose int               `yaml:"idle_close"`
 		AuthTime  int               `yaml:"auth_time"`
 		OTPIssuer string            `yaml:"otp_issuer"`
+		WebRoot   string            `yaml:"web_root"`
 		Users     map[string]string `yaml:"users"`
 		Auths     map[string]string `yaml:"auths"`
+		Version   string
 	}
 )

@@ -8,6 +8,7 @@ import (
 )
 
 func Start(cf Config) {
+	startAdminInterface(cf)
 	startBackendRegistrar(cf)
 	handshake := time.Duration(cf.Handshake) * time.Second
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", cf.ServPort))
@@ -62,7 +63,7 @@ func Start(cf Config) {
 				return
 			}
 			base.Log(`backend "%s" connected (%s)`, ra, name)
-			ch <- reqServ{name, c}
+			br <- reqServ{name, c}
 		}(conn)
 	}
 }

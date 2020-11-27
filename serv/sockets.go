@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"dk/base"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"net"
 	"sort"
@@ -73,16 +74,16 @@ func procPackets(cf Config) {
 				binary.BigEndian.PutUint32(data, session)
 				var p packet
 				if err != nil {
-					p = packet{ct: base.ChunkNUL, buf: append(data, []byte(err.Error())...)}
+					p = packet{ct: base.ChunkCON, buf: append(data, []byte(err.Error())...)}
 				} else {
-					p = packet{ct: base.ChunkNUL, buf: data, conn: conn}
+					p = packet{ct: base.ChunkCON, buf: data, conn: conn}
 					go func(s uint32, c net.Conn) {
 						defer func() {
 							if e := recover(); e != nil {
 								msg := make([]byte, 4)
 								binary.BigEndian.PutUint32(msg, s)
 								msg = append(msg, []byte(e.(error).Error())...)
-								ch <- packet{ct: base.ChunkNUL, buf: msg}
+								ch <- packet{ct: base.ChunkCON, buf: msg}
 							}
 						}()
 						data := make([]byte, base.MTU-2)
@@ -120,21 +121,25 @@ func procPackets(cf Config) {
 				port := binary.BigEndian.Uint16(data[1:])
 				hosts := portScan(port, cf.LanNets, cf.MacScan)
 				var msg bytes.Buffer
+				msg.WriteByte(1)
+				je := json.NewEncoder(&msg)
 				if len(hosts) == 0 {
-					fmt.Fprintln(&msg, "ERR")
-					fmt.Fprintf(&msg, "no host opens port %d\n", port)
+					je.Encode(map[string]interface{}{
+						"stat": false,
+						"mesg": fmt.Sprintf("no host opens port %d", port),
+					})
 				} else {
 					sort.Strings(hosts)
-					fmt.Fprintln(&msg, "OK")
-					for _, h := range hosts {
-						fmt.Fprintln(&msg, h)
-					}
+					je.Encode(map[string]interface{}{
+						"stat": true,
+						"data": hosts,
+					})
 				}
 				if err := base.Reply(master, session, msg.Bytes()); err != nil {
 					base.Log("reply(scan#%d): %v", port, err)
 				}
 			}
-		case base.ChunkNUL:
+		case base.ChunkCON:
 			if p.conn == nil {
 				base.Log("session %x aborted (%s)", session, string(data))
 				bad := peer[session]
@@ -151,7 +156,7 @@ func procPackets(cf Config) {
 				break
 			}
 			s.Connect(p.conn)
-			if err := s.Send(base.ChunkNUL, nil); err != nil {
+			if err := s.Send(base.ChunkNIL, nil); err != nil {
 				base.Log("backlog[%x]: %v", session, err)
 				base.Close(master, session) //向控制端通告该后端连接关闭
 				delete(peer, session)
@@ -164,7 +169,7 @@ func serve(conn net.Conn, cf Config) {
 	peer = make(map[uint32]*base.Conn)
 	master = conn
 	for {
-		ct, buf, err := base.Recv(master)
+		ct, buf, err := base.Recv(master, false)
 		if err != nil {
 			base.Log("recv: %v", err)
 			return
