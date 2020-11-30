@@ -7,7 +7,7 @@ import (
 
 func apiSite(w http.ResponseWriter, r *http.Request) {
 	ch := make(chan interface{})
-	br <- reqList{ch}
+	br <- reqList{"", ch}
 	select {
 	case rep := <-ch:
 		jsonReply(w, rep)

@@ -138,12 +138,27 @@ func initAdapterManager(cf Config) {
 	das.as = make(map[uint16]*dkAdapter)
 	das.ch = make(chan authReq, 16)
 	go func() {
+		bq := make(chan interface{})
 		for {
 		serv:
 			ar := <-das.ch
 			if ar.from == nil { //表示为adapter空闲超时关闭，需要剔除
 				delete(das.as, ar.port)
 				continue
+			}
+			br <- reqList{name: ar.name, rep: bq}
+			select {
+			case rep := <-bq:
+				r := rep.(map[string]interface{})
+				bl := r["data"].([]map[string]interface{})
+				if len(bl) == 0 {
+					ar.rply <- -2
+					goto serv
+				}
+			case <-time.After(chanLife):
+				base.Log("queryBackend(%s): timeout", ar.name)
+				ar.rply <- -1
+				goto serv
 			}
 			var fa *dkAdapter
 			for p, da := range das.as {
@@ -175,7 +190,7 @@ func initAdapterManager(cf Config) {
 						ar.rply <- int(p)
 					} else {
 						base.Log("newAdapter(%d, %s): %v", p, ar.from, err)
-						ar.rply <- -1
+						ar.rply <- 0 //创建新接口失败
 					}
 					break
 				}

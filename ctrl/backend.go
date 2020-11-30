@@ -35,8 +35,9 @@ type (
 		dest    []byte //格式：大端序uint16端口号+net.IP格式的目标IP
 		conn    net.Conn
 	}
-	reqList struct { //列出所有后端
-		rep chan interface{}
+	reqList struct { //列出指定后端，若name为空，列出所有后端
+		name string
+		rep  chan interface{}
 	}
 	reqScan struct { //扫描后端开放某端口的主机
 		name string
@@ -225,6 +226,9 @@ func startBackendRegistrar(cf Config) {
 				req := cmd.(reqList)
 				list := []map[string]interface{}{}
 				for n, b := range bs {
+					if req.name != "" && req.name != n {
+						continue
+					}
 					list = append(list, map[string]interface{}{
 						"name": n,
 						"conn": len(b.clis),

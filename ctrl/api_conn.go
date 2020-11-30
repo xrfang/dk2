@@ -58,7 +58,24 @@ func apiConn(w http.ResponseWriter, r *http.Request) {
 	}
 	select {
 	case rep := <-ch:
-		jsonReply(w, rep)
+		if rep <= 0 {
+			var mesg string
+			switch rep {
+			case 0: //创建新接口失败（服务器容量满或发生其它错误）
+				mesg = "create adapter failed"
+			case -1: //查询后端超时
+				mesg = "query backend timeout"
+			case -2: //找不到名字为name的后端
+				mesg = "no such backend: " + name
+			}
+			jsonReply(w, map[string]interface{}{"stat": false, "mesg": mesg})
+			return
+		}
+		jsonReply(w, map[string]interface{}{
+			"stat": true,
+			"data": rep,
+			"mesg": fmt.Sprintf("connect to port %d", rep),
+		})
 	case <-time.After(chanLife):
 		jsonReply(w, map[string]interface{}{
 			"stat": false,
