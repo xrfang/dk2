@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func apiConn(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +27,7 @@ func apiConn(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	host := "127.0.0.1"
+	host := net.ParseIP("127.0.0.1")
 	if len(p) == 3 && len(p[2]) > 0 {
 		ip := net.ParseIP(p[2])
 		if ip == nil {
@@ -36,7 +37,32 @@ func apiConn(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		host = ip.String()
+		host = ip
 	}
-	fmt.Printf("conn: name=%s; port=%d; host=%s\n", name, port, host)
+	rip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	ip := net.ParseIP(rip)
+	if ip == nil {
+		jsonReply(w, map[string]interface{}{
+			"stat": false,
+			"mesg": fmt.Sprintf("failed to parse remote addr '%s'", r.RemoteAddr),
+		})
+		return
+	}
+	ch := make(chan int)
+	das.ch <- authReq{
+		from: ip,
+		name: name,
+		host: host,
+		port: uint16(port),
+		rply: ch,
+	}
+	select {
+	case rep := <-ch:
+		jsonReply(w, rep)
+	case <-time.After(chanLife):
+		jsonReply(w, map[string]interface{}{
+			"stat": false,
+			"mesg": "no reply",
+		})
+	}
 }

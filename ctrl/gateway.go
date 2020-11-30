@@ -8,6 +8,7 @@ import (
 )
 
 func Start(cf Config) {
+	initAdapterManager(cf)
 	startAdminInterface(cf)
 	startBackendRegistrar(cf)
 	handshake := time.Duration(cf.Handshake) * time.Second
