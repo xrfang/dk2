@@ -51,7 +51,7 @@ func apiConn(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	ch := make(chan int)
+	ch := make(chan interface{})
 	das.ch <- authReq{
 		from: ip,
 		name: name,
@@ -61,7 +61,7 @@ func apiConn(w http.ResponseWriter, r *http.Request) {
 	}
 	select {
 	case rep := <-ch:
-		if rep <= 0 {
+		if rep.(int) <= 0 {
 			var mesg string
 			switch rep {
 			case 0: //创建新接口失败（服务器容量满或发生其它错误）

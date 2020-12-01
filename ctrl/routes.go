@@ -13,6 +13,7 @@ func notFound(w http.ResponseWriter, r *http.Request) {
 func setupRoutes(cf Config) {
 	http.HandleFunc("/", home)
 	http.HandleFunc("/dk/login", apiLogin(cf))
+	http.HandleFunc("/dk/auth", apiAuth)
 	http.HandleFunc("/dk/site", apiSite)
 	http.HandleFunc("/dk/port", notFound)
 	http.HandleFunc("/dk/port/", apiScan)

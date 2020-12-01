@@ -1,4 +1,5 @@
 conf/*
 dk
 */errors.go
+log/*
 version.go

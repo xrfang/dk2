@@ -1,3 +1,3 @@
-# doorkeeper
+# DoorKeeper
 
-Versatile reverse proxy for remote access of host behind NAT firewall
+Provides secure access to hosts behind NAT firewall.

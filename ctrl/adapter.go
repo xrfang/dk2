@@ -24,7 +24,7 @@ type (
 		host net.IP
 		port uint16
 		time time.Time //过期时间
-		rply chan int
+		rply chan interface{}
 	}
 	dkAdapters struct {
 		up time.Time //上次清理AUTH的时间
@@ -168,6 +168,22 @@ func initAdapterManager(cf Config) {
 			das.RefreshAuths()
 			if ar.from == nil { //表示为adapter空闲超时关闭，需要剔除
 				delete(das.as, ar.port)
+				continue
+			}
+			if ar.port == 0 { //表示查询给来源为"from"的所有授权
+				auths := []map[string]interface{}{}
+				for p, da := range das.as {
+					a := da.getAuth(ar.from)
+					if a != nil {
+						auths = append(auths, map[string]interface{}{
+							"port":  p,
+							"site":  a.name,
+							"addr":  fmt.Sprintf("%s:%d", a.host, a.port),
+							"until": a.time.Format(time.RFC3339),
+						})
+					}
+				}
+				ar.rply <- auths
 				continue
 			}
 			ar.time = time.Now().Add(time.Duration(cf.AuthTime) * time.Second)
