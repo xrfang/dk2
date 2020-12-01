@@ -105,11 +105,9 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 					base.Dbg("dispatch[%x]: session not found, dropped %d bytes", session, len(data))
 					break
 				}
-				if err := s.Send(base.ChunkDAT, data); err != nil {
+				if err := s.Send(data); err != nil {
 					base.Log("dispatch[%x]: %v", session, err)
-					if err != base.ErrInvalidChunk {
-						b.Remove(session)
-					}
+					b.Remove(session)
 				}
 			case base.ChunkCMD:
 				switch data[0] {
@@ -152,7 +150,7 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 					for {
 						n, err := c.Read(data)
 						assert(err)
-						assert(base.Send(b.serv, data[:n]))
+						assert(base.Send(b.serv, session, data[:n]))
 					}
 				}(conn)
 			}
@@ -221,6 +219,7 @@ func startBackendRegistrar(cf Config) {
 				}
 				buf := make([]byte, 4)
 				binary.BigEndian.PutUint32(buf, req.session)
+				buf = append(buf, req.dest...)
 				b.comm <- chunk{base.ChunkCON, buf, req.conn}
 			case reqList:
 				req := cmd.(reqList)

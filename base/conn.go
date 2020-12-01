@@ -75,15 +75,9 @@ func Recv(conn net.Conn) (ct ChunkType, data []byte, err error) {
 	return
 }
 
-func (c *Conn) Send(ct ChunkType, data []byte) (err error) {
-	if len(data) > 0 {
-		buf, err := Encode(ct, data)
-		if err != nil {
-			return err
-		}
-		if len(c.data) < backlog {
-			c.data = append(c.data, buf)
-		}
+func (c *Conn) Send(data []byte) (err error) {
+	if len(data) > 0 && len(c.data) < backlog {
+		c.data = append(c.data, data)
 	}
 	if c.conn == nil {
 		return nil
@@ -94,9 +88,7 @@ func (c *Conn) Send(ct ChunkType, data []byte) (err error) {
 		}
 	}
 	c.data = nil
-	if ct == ChunkDAT {
-		c.used = time.Now()
-	}
+	c.used = time.Now()
 	return nil
 }
 

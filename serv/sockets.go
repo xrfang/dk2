@@ -90,7 +90,7 @@ func procPackets(cf Config) {
 						for {
 							n, err := c.Read(data)
 							assert(err)
-							assert(base.Send(master, data[:n]))
+							assert(base.Send(master, session, data[:n]))
 						}
 					}(session, conn)
 				}
@@ -103,12 +103,10 @@ func procPackets(cf Config) {
 				base.Close(master, session) //向控制端通告该后端连接关闭
 				break
 			}
-			if err := c.Send(base.ChunkDAT, data); err != nil {
+			if err := c.Send(data); err != nil {
 				base.Log("dispatch[%x]: %v", session, err)
-				if err != base.ErrInvalidChunk {
-					base.Close(master, session) //向控制端通告该后端连接关闭
-					delete(peer, session)
-				}
+				base.Close(master, session) //向控制端通告该后端连接关闭
+				delete(peer, session)
 			}
 		case base.ChunkCMD:
 			switch data[0] {
@@ -156,7 +154,7 @@ func procPackets(cf Config) {
 				break
 			}
 			s.Connect(p.conn)
-			if err := s.Send(base.ChunkNIL, nil); err != nil {
+			if err := s.Send(nil); err != nil {
 				base.Log("backlog[%x]: %v", session, err)
 				base.Close(master, session) //向控制端通告该后端连接关闭
 				delete(peer, session)

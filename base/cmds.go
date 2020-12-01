@@ -35,8 +35,11 @@ func Open(conn net.Conn, session uint32, dest []byte) error {
 	return send(conn, buf)
 }
 
-func Send(conn net.Conn, data []byte) error {
-	buf, err := Encode(ChunkDAT, data)
+func Send(conn net.Conn, session uint32, data []byte) error {
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, session)
+	buf = append(buf, data...)
+	buf, err := Encode(ChunkDAT, buf)
 	if err != nil {
 		return err
 	}
