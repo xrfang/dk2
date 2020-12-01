@@ -144,6 +144,9 @@ func NewBackend(name string, conn net.Conn, cf Config) *backend {
 						if e := recover(); e != nil {
 							base.Dbg("[%s] session %x: %v", name, session, e)
 							base.Close(b.serv, session)
+							buf := make([]byte, 4)
+							binary.BigEndian.PutUint32(buf, session)
+							b.comm <- chunk{base.ChunkCLS, buf, nil}
 						}
 					}()
 					data := make([]byte, base.MTU-2)
@@ -228,9 +231,16 @@ func startBackendRegistrar(cf Config) {
 					if req.name != "" && req.name != n {
 						continue
 					}
+					conns := []string{}
+					for _, c := range b.clis {
+						addr := c.Remote()
+						if addr != nil {
+							conns = append(conns, addr.IP.String())
+						}
+					}
 					list = append(list, map[string]interface{}{
 						"name": n,
-						"conn": len(b.clis),
+						"conn": conns,
 					})
 				}
 				req.rep <- map[string]interface{}{

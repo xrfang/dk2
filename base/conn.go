@@ -92,6 +92,13 @@ func (c *Conn) Send(data []byte) (err error) {
 	return nil
 }
 
+func (c *Conn) Remote() *net.TCPAddr {
+	if c.conn == nil {
+		return nil
+	}
+	return c.conn.RemoteAddr().(*net.TCPAddr)
+}
+
 func (c *Conn) Close() error {
 	c.data = nil
 	if c.conn != nil {
