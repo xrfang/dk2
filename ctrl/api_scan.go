@@ -9,6 +9,9 @@ import (
 )
 
 func apiScan(w http.ResponseWriter, r *http.Request) {
+	if !allowed(r) {
+		return
+	}
 	p := strings.SplitN(r.URL.Path[9:], "/", 2)
 	if len(p) != 2 {
 		jsonReply(w, map[string]interface{}{

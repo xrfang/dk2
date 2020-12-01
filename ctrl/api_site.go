@@ -6,6 +6,9 @@ import (
 )
 
 func apiSite(w http.ResponseWriter, r *http.Request) {
+	if !allowed(r) {
+		return
+	}
 	ch := make(chan interface{})
 	br <- reqList{"", ch}
 	select {

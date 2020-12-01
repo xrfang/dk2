@@ -10,6 +10,9 @@ import (
 )
 
 func apiConn(w http.ResponseWriter, r *http.Request) {
+	if !allowed(r) {
+		return
+	}
 	p := strings.Split(r.URL.Path[9:], "/")
 	if len(p) < 2 || len(p) > 3 {
 		jsonReply(w, map[string]interface{}{
