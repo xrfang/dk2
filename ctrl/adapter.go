@@ -23,9 +23,11 @@ type (
 		name string
 		host net.IP
 		port uint16
+		time time.Time //过期时间
 		rply chan int
 	}
 	dkAdapters struct {
+		up time.Time //上次清理AUTH的时间
 		as map[uint16]*dkAdapter
 		ch chan authReq
 	}
@@ -41,6 +43,17 @@ func (da *dkAdapter) setAuth(a *authReq) {
 	da.Lock()
 	defer da.Unlock()
 	da.auth[a.from.String()] = a
+}
+
+func (da *dkAdapter) refreshAuths() {
+	da.Lock()
+	defer da.Unlock()
+	for s, a := range da.auth {
+		if time.Now().After(a.time) {
+			base.Dbg("adapter#%d: removed expired auth for %s", da.port, s)
+			delete(da.auth, s)
+		}
+	}
 }
 
 func (da *dkAdapter) Used() {
@@ -70,7 +83,7 @@ func (da *dkAdapter) RequestConnection(conn net.Conn) {
 	addr := conn.RemoteAddr().(*net.TCPAddr)
 	from := addr.IP
 	ar := da.getAuth(from)
-	if ar == nil {
+	if ar == nil || time.Now().After(ar.time) {
 		base.Log("[adapter#%d] cannot get auth for %s", da.port, from.String())
 		conn.Close()
 		return
@@ -128,6 +141,16 @@ func newAdapter(serv uint16, ar *authReq) (da *dkAdapter, err error) {
 	return
 }
 
+//RefreshAuths 清理过期的授权
+func (das *dkAdapters) RefreshAuths() {
+	if time.Since(das.up) < time.Minute {
+		return //最多每分钟清理一次
+	}
+	for _, da := range das.as {
+		da.refreshAuths()
+	}
+}
+
 var (
 	das             dkAdapters
 	adapterIdleLife time.Duration
@@ -142,10 +165,12 @@ func initAdapterManager(cf Config) {
 		for {
 		serv:
 			ar := <-das.ch
+			das.RefreshAuths()
 			if ar.from == nil { //表示为adapter空闲超时关闭，需要剔除
 				delete(das.as, ar.port)
 				continue
 			}
+			ar.time = time.Now().Add(time.Duration(cf.AuthTime) * time.Second)
 			br <- reqList{name: ar.name, rep: bq}
 			select {
 			case rep := <-bq:
