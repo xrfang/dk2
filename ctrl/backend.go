@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sort"
 	"time"
 )
 
@@ -35,7 +36,7 @@ type (
 		dest    []byte //格式：大端序uint16端口号+net.IP格式的目标IP
 		conn    net.Conn
 	}
-	reqList struct { //列出指定后端，若name为空，列出所有后端
+	reqList struct { //列出指定后端及其状态、活跃连接数（name为空则为所有后端）
 		name string
 		rep  chan interface{}
 	}
@@ -227,26 +228,25 @@ func startBackendRegistrar(cf Config) {
 			case reqList:
 				req := cmd.(reqList)
 				list := []map[string]interface{}{}
-				for n, b := range bs {
+				for n := range cf.Auths {
 					if req.name != "" && req.name != n {
 						continue
 					}
-					conns := []string{}
-					for _, c := range b.clis {
-						addr := c.Remote()
-						if addr != nil {
-							conns = append(conns, addr.IP.String())
-						}
+					b := bs[n]
+					var s map[string]interface{}
+					if b == nil {
+						s = map[string]interface{}{"name": n, "conn": -1}
+					} else {
+						s = map[string]interface{}{"name": n, "conn": len(b.clis)}
 					}
-					list = append(list, map[string]interface{}{
-						"name": n,
-						"conn": conns,
-					})
+					list = append(list, s)
 				}
-				req.rep <- map[string]interface{}{
-					"stat": true,
-					"data": list,
-				}
+				sort.Slice(list, func(i, j int) bool {
+					ni := list[i]["name"].(string)
+					nj := list[j]["name"].(string)
+					return ni < nj
+				})
+				req.rep <- map[string]interface{}{"stat": true, "data": list}
 			case reqScan:
 				req := cmd.(reqScan)
 				b := bs[req.name]

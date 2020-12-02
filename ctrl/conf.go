@@ -13,6 +13,6 @@ type (
 		WebRoot   string            `yaml:"web_root"`
 		Users     map[string]string `yaml:"users"`
 		Auths     map[string]string `yaml:"auths"`
-		Version   string
+		Version   string            `yaml:"-"`
 	}
 )

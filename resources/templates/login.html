@@ -25,22 +25,28 @@
     </div>
 </div>
 <script>
-function doLogin() {
-    var u = $('#user').text().trim()
-    var p = $('#pass').val().trim()
-    if (p == "") {
-        toast("错误", "请输入密码", "error")
-        return
-    }
-    $.get(`/dk/login?u=${u}&p=${p}`, function(e) {
-        if (e.stat) {
-            location.reload(true)
-        } else {
-            toast("错误", "密码不正确", "error")
-            $('#pass').val('')
+    function doLogin() {
+        var u = $('#user').text().trim()
+        var p = $('#pass').val().trim()
+        if (p == "") {
+            toast("错误", "请输入密码", "error")
+            return
         }
+        $.get(`/dk/login?u=${u}&p=${p}`, function(e) {
+            if (e.stat) {
+                location.reload(true)
+            } else {
+                toast("错误", "密码不正确", "error")
+                $('#pass').val('')
+            }
+        })
+    }
+    $(function () {
+        $('#pass').keypress(function (event) {
+            var keycode = (event.keyCode ? event.keyCode : event.which);
+            if (keycode == '13') doLogin()
+        })
     })
-}
 </script>
 {{template "footer"}}
 {{end}}
