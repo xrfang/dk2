@@ -8,8 +8,8 @@ arm: export GOARM=7
 arm: release
 upx:
 	upx -9 dk*
-debug: setver geneh compdbg
-release: setver geneh comprel upx
+debug: setver geneh compdbg pack
+release: setver geneh comprel upx pack
 geneh: #generate error handler
 	@for tpl in `find . -type f |grep errors.tpl`; do \
         target=`echo $$tpl|sed 's/\.tpl/\.go/'`; \
@@ -26,5 +26,10 @@ comprel:
 	go build -ldflags="-s -w" .
 compdbg:
 	go build -race -gcflags=all=-d=checkptr=0 .
+pack: export GOOS=
+pack: export GOARCH=
+pack: export GOARM=
+pack:
+	cd utils && go build . && ./pack && rm pack
 clean:
 	rm -fr version.go dk

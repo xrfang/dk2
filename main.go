@@ -15,6 +15,7 @@ import (
 
 	"github.com/mdp/qrterminal"
 	"github.com/pquerna/otp/totp"
+	"github.com/xrfang/go-res"
 	"gopkg.in/yaml.v2"
 )
 
@@ -97,6 +98,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, `ERROR: no auth defined (gateway.auths)`)
 			return
 		}
+		policy := res.Verbatim
+		if cf.Debug {
+			policy = res.OverwriteIfNewer
+		}
+		assert(res.Extract(cf.Gateway.WebRoot, policy))
 		ctrl.Start(cf.Gateway)
 	}
 }

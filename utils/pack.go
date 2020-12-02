@@ -17,12 +17,8 @@ func assert(err error) {
 func main() {
 	PROJ_ROOT, _ := filepath.Abs(filepath.Dir(os.Args[0]) + "/..")
 	assert(os.Chdir(PROJ_ROOT))
-	fns, err := filepath.Glob("bin/storekeeper*")
-	assert(err)
 	root := filepath.Join(PROJ_ROOT, "resources")
-	for _, fn := range fns {
-		fmt.Printf("pack: processing %s...\n", fn)
-		assert(res.Pack(root, fn))
-	}
-	fmt.Printf("pack: processed %d files\n", len(fns))
+	fmt.Printf("pack: processing... ")
+	assert(res.Pack(root, "dk"))
+	fmt.Println("done")
 }
