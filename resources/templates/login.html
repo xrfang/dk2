@@ -42,8 +42,11 @@
         })
     }
     $(function () {
+        $(document).on('keydown', function(event) {
+            if (event.key == "Escape") $('#pass').val('')
+        })
         $('#pass').keypress(function (event) {
-            var keycode = (event.keyCode ? event.keyCode : event.which);
+            var keycode = (event.keyCode ? event.keyCode : event.which)
             if (keycode == '13') doLogin()
         })
         $('#pass').focus()
