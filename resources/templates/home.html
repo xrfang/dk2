@@ -39,6 +39,20 @@
   </div>
 </div>
 <script>
+//将毫秒级时间戳表示为hh:mm:ss，去除亚秒部分
+function hms(millis) {
+	var time = millis / 1000
+    var hrs = Math.floor(time / 3600)
+    var mins = Math.floor((time % 3600) / 60)
+    var secs = Math.floor(time) % 60
+    var ret = ""
+    if (hrs > 0) {
+        ret += "" + hrs + ":" + (mins < 10 ? "0" : "")
+    }
+    ret += "" + mins + ":" + (secs < 10 ? "0" : "")
+    ret += "" + secs
+    return ret
+}
 function selSite() { getSites($('#gateways').val()) }
 function getSites(sel) {
   $.get("/dk/site", function(e) {
@@ -75,7 +89,8 @@ function getSites(sel) {
               if (a.site != sel) {
                 return
               }
-              auth.push(`<div style="font-size:14px">${a.port} =&gt; ${a.addr}</div>`)
+			  var ttl = hms(Date.parse(a.until) - (new Date()))
+              auth.push(`<div style="font-size:14px">${a.port} =&gt; ${a.addr} [${ttl}]</div>`)
             })
             if (auth.length > 0) {
               var stat = `<div style="font-size:14px;font-weight:bold;margin-bottom:0.5rem">
