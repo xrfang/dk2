@@ -1,9 +1,5 @@
 {{define "body"}}
 {{template "header"}}
-<style>
-  .card-header {background:darkgray;padding:10px;font-size:16px}
-  .col {margin:5 0 5 0}
-</style>
 <nav style="padding:0.3rem 0.5rem 0.4rem 0.5rem;background:darkgray" class="navbar navbar-expand navbar-dark">
   <div class="collapse navbar-collapse" style="padding:6px">
     <img style="width:190px" src="imgs/title.png" />
@@ -11,69 +7,96 @@
 </nav>
 <div class="container" style="padding-top:15px">
   <div class="card" style="height:calc(100% - 88px)">
-    <div class="card-header">
+    <div class="card-header" style="background:darkgray;padding:10px;font-size:16px">
       <i class="fas fa-server"></i> <span id="bsummary"></span>
     </div>
     <div class="card-body" style="padding:20 10">
       <div style="margin:0 9 9 9;display:inline-block;vertical-align:top">
-        <!-- <span style="display:inline">网关&nbsp;</span> -->
-        <select style="display:inline-block;width:260px;max-width:260px" class="form-control" id="gateways">
-          <option>secret-eye</option>
-          <option>shennongjia</option>
-          <option>xuebaoding</option>
-        </select>
+        <select id="gateways" class="form-control" style="display:inline-block;width:260px;max-width:260px"
+          onchange="selSite()"></select>
         <small class="form-text text-muted">选择需要连接的网关</small>
       </div>
       <div style="margin:0 9 9 9;display:inline-block;vertical-align:top">
-        <!-- <span style="display:inline;line-height:38px;vertical-align:top">主机&nbsp;</span> -->
         <div style="display:inline-block">
-          <input style="display:inline-block;max-width:255px" class="form-control" placeholder="目标：[host:]<port>" />
-          <small class="form-text text-muted">host默认为网关，port必须提供</small>    
+          <input style="display:inline-block;max-width:255px" class="form-control" placeholder="内网目标：[ip:]<port>" />
+          <small class="form-text text-muted">ip默认为网关，port必须提供</small>    
         </div>
       </div>
       <div style="margin:0 9 9 9;display:inline-block;vertical-align:top">
-        <!-- <span style="display:inline;line-height:38px;vertical-align:top">主机&nbsp;</span> -->
-        <button class="btn btn-primary">申请连接授权</button>
-        <button class="btn btn-secondary">端口扫描</button>
+        <button id="btnAuth" class="btn btn-primary">申请连接授权</button>
+        <button id="btnScan" class="btn btn-secondary">端口扫描</button>
       </div>
       <div class="card" style="margin:15 9 9 9">
-        <div class="card-body">
-          <p style="font-size:13px;text-shadow:1px 1px 1px darkgray;margin-top:-30px;display:inline-block;background:white">&nbsp; 当前有效授权 &nbsp;</p>
-          <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+        <div class="card-body" style="padding:20 15 10 15">
+          <p style="font-size:14px;text-shadow:1px 1px 1px darkgray;margin-top:-31px;margin-bottom:0;display:inline-block;background:white">&nbsp; 当前有效授权 &nbsp;</p>
+          <p class="card-text">
+            <span id="asl" class="spinner-border spinner-border-sm text-secondary" role="status"></span>
+            <span id="asi" style="font-size:14px;font-family:courier"></span>
+          </p>
         </div>
       </div>      
     </div>
   </div>
 </div>
 <script>
-function getSites() {
+function selSite() { getSites($('#gateways').val()) }
+function getSites(sel) {
   $.get("/dk/site", function(e) {
+    $('#btnAuth').prop('disabled', 'disabled')
+    $('#btnScan').prop('disabled', 'disabled')
+    $('#asl').css("display", "")
+    $('#asi').text("请稍候...")
     if (!e.stat) {
       toast("API错误", `/dk/site: ${e.mesg}`, "warning")
       return
     }
-    $('#bsinfo').empty()
-    var online = 0
+    $('#gateways').empty()
+    var online = 0, found = false, active = false
     $.each(e.data, function(_, s) {
       if (s.conn >= 0) online++
-      var style, status
-      switch(s.conn) {
-      case -1:
-        style = "danger"
-        status = "离线"
-        break
-      case 0:
-        style = "secondary"
-        status = "空闲"
-        break
-      default:
-        style = "primary"
-        status = `${s.conn}连接`
-      } 
-      $('#bsinfo').append(`<div class="alert alert-${style}" role="alert"
-        style="display:inline-block;padding:5 9 5 9;margin:14 0 14 14">${s.name}（${status}）</div>`)
+      if (s.name == sel) {
+        active = s.conn >= 0
+        found = true
+      }
+      var caption = (s.conn < 0) ? `${s.name} (离线)`: `${s.name} (${s.conn}个活跃连接)`
+      $('#gateways').append(`<option value="${s.name}">${caption}</option>`)
     })
     $('#bsummary').text(`${e.data.length}个注册网关，其中${online}个在线`)
+    if (found) {
+      $('#gateways').val(sel)
+      if (active) {
+        $.get('/dk/auth', function(e) {
+          $('#asl').css("display", "none")
+          if (!e.stat || e.data.length == 0) {
+            $('#asi').text(`您在网关'${sel}'没有连接授权`)
+          } else {
+            var auth = new Array()
+            $.each(e.data, function(_, a) {
+              if (a.site != sel) {
+                return
+              }
+              auth.push(`<div style="font-size:14px">${a.port} =&gt; ${a.addr}</div>`)
+            })
+            if (auth.length > 0) {
+              var stat = `<div style="font-size:14px;font-weight:bold;margin-bottom:0.5rem">
+                您在网关'${sel}'有以下授权：</div>${auth.join('')}`
+              $('#asi').html(stat)
+            } else {
+              $('#asi').text(`您在网关'${sel}'没有连接授权`)
+            }
+          }
+          $('#btnAuth').prop('disabled', '')
+          $('#btnScan').prop('disabled', '')
+        })
+      } else {
+        $('#asl').css("display", "none")
+        $('#asi').text(`您在网关'${sel}'没有连接授权`)
+      }
+    } else {
+      $('#gateways').val("")
+      $('#asl').css("display", "none")
+      $('#asi').text("请选择一个网关")
+    }
   })
 }
 $(function() {
