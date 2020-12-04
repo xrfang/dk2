@@ -16,6 +16,9 @@ func home(cf Config) http.HandlerFunc {
 			}
 			user := r.URL.Query().Get("u")
 			if user == "" {
+				user = getCookie(r, "u")
+			}
+			if user == "" {
 				return
 			}
 			renderTemplate(w, "login.html", struct{ User string }{user})

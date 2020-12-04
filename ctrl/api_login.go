@@ -7,11 +7,12 @@ import (
 
 func apiLogin(cf Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if authChk(r, cf) {
-			tok := uuid(8)
-			exp := time.Now().Add(time.Duration(cf.AuthTime) * time.Second)
+		if usr, ok := authChk(r, cf); ok {
+			tok, exp := TS.Set(r)
 			setCookie(w, "t", tok, cf.AuthTime)
-			tokens.Store(tok, exp)
+			if usr != "" {
+				setCookie(w, "u", usr, 365*86400)
+			}
 			jsonReply(w, map[string]interface{}{
 				"stat": true,
 				"data": map[string]interface{}{
